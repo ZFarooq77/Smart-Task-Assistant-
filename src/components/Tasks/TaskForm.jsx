@@ -1,8 +1,9 @@
 //TaskForm.jsx to send the new task to your n8n /add-task webhook.
 
 import React, { useState } from "react";
+import { taskAPI } from "../../api/supabaseClient";
 
-export default function TaskForm({ token, onTaskAdded }) {
+export default function TaskForm({ token, userId, onTaskAdded }) {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -15,20 +16,7 @@ export default function TaskForm({ token, onTaskAdded }) {
     setErrorMsg("");
 
     try {
-      const res = await fetch("http://localhost:5678/webhook-test/process-task", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`, // Send Supabase JWT
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ description })
-      });
-
-      if (!res.ok) {
-        throw new Error(`Error: ${res.status}`);
-      }
-
-      const newTask = await res.json();
+      const newTask = await taskAPI.submitTask(description, token, userId);
       onTaskAdded(newTask); // Update Dashboard state
       setDescription(""); // Clear form
     } catch (err) {
@@ -40,28 +28,63 @@ export default function TaskForm({ token, onTaskAdded }) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="mb-6 bg-gray-50 p-4 rounded-lg shadow"
-    >
-      {errorMsg && <p className="text-red-500 mb-3">{errorMsg}</p>}
+    <div className="space-y-4">
+      {errorMsg && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm animate-fadeIn">
+          <div className="flex items-center">
+            <span className="mr-2 text-red-600 font-bold">✕</span>
+            {errorMsg}
+          </div>
+        </div>
+      )}
 
-      <div className="flex gap-3">
-        <input
-          type="text"
-          placeholder="Enter your task..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="flex-1 border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-500 text-white px-5 py-3 rounded-lg hover:bg-blue-600 transition disabled:opacity-50"
-        >
-          {loading ? "Adding..." : "Add Task"}
-        </button>
-      </div>
-    </form>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <textarea
+              placeholder="Describe what you need to accomplish..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 placeholder-gray-500 text-base font-medium resize-none"
+              rows="3"
+              required
+            />
+            <p className="mt-2 text-xs text-gray-500">
+              Be specific about your task for better AI analysis and time estimation
+            </p>
+          </div>
+
+          <div className="flex sm:flex-col gap-2">
+            <button
+              type="submit"
+              disabled={loading || !description.trim()}
+              className="btn btn-primary btn-lg flex items-center justify-center space-x-2 min-w-[140px] h-fit"
+            >
+              {loading ? (
+                <>
+                  <span className="animate-pulse mr-2">●</span>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <span className="mr-2">+</span>
+                  <span>Add Task</span>
+                </>
+              )}
+            </button>
+
+            {description.trim() && (
+              <button
+                type="button"
+                onClick={() => setDescription("")}
+                className="btn btn-secondary btn-sm flex items-center justify-center"
+              >
+                <span className="text-sm">✕</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </form>
+    </div>
   );
 }

@@ -6,14 +6,20 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Pages
 import Login from "./components/Pages/Login";
-import Signup from "./components/Pages/Signup";
 import Dashboard from "./components/Pages/Dashboard";
 
 // Private Route Wrapper
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
 
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+        <p className="mt-4 text-white/80">Loading...</p>
+      </div>
+    </div>
+  );
   if (!user) return <Navigate to="/login" replace />;
 
   return children;
@@ -25,7 +31,6 @@ export default function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
 
           {/* Dashboard is protected */}
           <Route
