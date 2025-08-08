@@ -59,6 +59,20 @@ export default function Dashboard() {
     }
   };
 
+  // Handle refresh tasks
+  const handleRefreshTasks = async () => {
+    if (!user?.id) return;
+
+    try {
+      setError("");
+      const userTasks = await taskAPI.fetchUserTasks(user.id);
+      setTasks(userTasks);
+    } catch (err) {
+      console.error("Failed to refresh tasks:", err);
+      setError("Failed to refresh tasks. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
@@ -181,9 +195,19 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-600">Manage and track your progress</p>
                   </div>
                 </div>
-                <span className="badge badge-primary text-sm px-3 py-1">
-                  {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
-                </span>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={handleRefreshTasks}
+                    className="btn btn-secondary btn-sm flex items-center space-x-2 hover:bg-gray-200 transition-colors"
+                    title="Refresh tasks"
+                  >
+                    <span className="text-sm">🔄</span>
+                    <span className="hidden sm:inline">Refresh</span>
+                  </button>
+                  <span className="badge badge-primary text-sm px-3 py-1">
+                    {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+                  </span>
+                </div>
               </div>
             </div>
             <div className="card-body">

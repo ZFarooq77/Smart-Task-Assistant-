@@ -17,8 +17,16 @@ export default function TaskForm({ token, userId, onTaskAdded }) {
 
     try {
       const newTask = await taskAPI.submitTask(description, token, userId);
-      onTaskAdded(newTask); // Update Dashboard state
-      setDescription(""); // Clear form
+      console.log("Task submission successful:", newTask);
+
+      if (newTask && (newTask.id || newTask.user_id)) {
+        onTaskAdded(newTask); // Update Dashboard state
+        setDescription(""); // Clear form
+        setErrorMsg(""); // Clear any previous errors
+      } else {
+        console.warn("Task submission returned unexpected format:", newTask);
+        setErrorMsg("Task may have been created but couldn't be confirmed. Please refresh to see your tasks.");
+      }
     } catch (err) {
       console.error("Task submission failed:", err);
       setErrorMsg("Failed to add task. Please try again.");
