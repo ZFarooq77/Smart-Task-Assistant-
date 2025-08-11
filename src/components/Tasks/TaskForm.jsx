@@ -17,19 +17,29 @@ export default function TaskForm({ token, userId, onTaskAdded }) {
 
     try {
       const newTask = await taskAPI.submitTask(description, token, userId);
-      console.log("Task submission successful:", newTask);
+      console.log("✅ Task submission successful:", newTask);
 
       if (newTask && (newTask.id || newTask.user_id)) {
         onTaskAdded(newTask); // Update Dashboard state
         setDescription(""); // Clear form
         setErrorMsg(""); // Clear any previous errors
       } else {
-        console.warn("Task submission returned unexpected format:", newTask);
+        console.warn("⚠️ Task submission returned unexpected format:", newTask);
         setErrorMsg("Task may have been created but couldn't be confirmed. Please refresh to see your tasks.");
       }
     } catch (err) {
-      console.error("Task submission failed:", err);
-      setErrorMsg("Failed to add task. Please try again.");
+      console.error("❌ Task submission failed:", err);
+
+      // Provide specific error messages based on the error
+      if (err.message.includes('CORS')) {
+        setErrorMsg("❌ n8n backend is not accessible (CORS error). Please make sure n8n is running and configured properly.");
+      } else if (err.message.includes('404')) {
+        setErrorMsg("❌ n8n webhook endpoint not found. Please check if your n8n workflow is active.");
+      } else if (err.message.includes('Failed to fetch')) {
+        setErrorMsg("❌ Cannot connect to n8n backend. Please make sure n8n is running on localhost:5678.");
+      } else {
+        setErrorMsg(`❌ Failed to add task: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
