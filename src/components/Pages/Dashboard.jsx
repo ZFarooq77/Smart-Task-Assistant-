@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import TaskForm from "../Tasks/TaskForm";
 import TaskList from "../Tasks/TaskList";
 import { taskAPI, supabase } from "../../api/supabaseClient";
+import GradientLogo from "../UI/GradientLogo";
 
 export default function Dashboard() {
   const { user, session } = useAuth();
@@ -11,6 +12,10 @@ export default function Dashboard() {
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isTasksExpanded, setIsTasksExpanded] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState("");
 
   // Redirect if not logged in
@@ -61,15 +66,18 @@ export default function Dashboard() {
 
   // Handle refresh tasks
   const handleRefreshTasks = async () => {
-    if (!user?.id) return;
+    if (!user?.id || refreshing) return;
 
     try {
+      setRefreshing(true);
       setError("");
       const userTasks = await taskAPI.fetchUserTasks(user.id);
       setTasks(userTasks);
     } catch (err) {
       console.error("Failed to refresh tasks:", err);
       setError("Failed to refresh tasks. Please try again.");
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -87,6 +95,13 @@ export default function Dashboard() {
   const completedTasks = tasks.filter(task => task.is_done).length;
   const pendingTasks = tasks.filter(task => !task.is_done).length;
 
+  // Filter tasks based on search query
+  const filteredTasks = tasks.filter(task =>
+    task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    task.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    task.summary?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
@@ -94,27 +109,11 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <div className="w-7 h-7 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              </div>
+              <GradientLogo size="md" />
               <h1 className="text-xl font-bold text-gray-900">TaskFlow</h1>
             </div>
 
             <div className="flex items-center space-x-4">
-              <div className="hidden sm:flex items-center space-x-6 text-sm">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-blue-600">{tasks.length}</div>
-                  <div className="text-xs text-gray-500">Total</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-yellow-600">{pendingTasks}</div>
-                  <div className="text-xs text-gray-500">Pending</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-green-600">{completedTasks}</div>
-                  <div className="text-xs text-gray-500">Done</div>
-                </div>
-              </div>
-
               <div className="flex items-center space-x-3">
                 <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-medium text-xs">
@@ -123,12 +122,25 @@ export default function Dashboard() {
                 </div>
                 <button
                   onClick={async () => {
-                    await supabase.auth.signOut();
-                    navigate("/login");
+                    if (loggingOut) return;
+                    try {
+                      setLoggingOut(true);
+                      await supabase.auth.signOut();
+                      navigate("/login");
+                    } catch (err) {
+                      console.error("Logout failed:", err);
+                      setLoggingOut(false);
+                    }
                   }}
-                  className="btn btn-danger btn-sm"
+                  disabled={loggingOut}
+                  className={`btn btn-danger btn-sm flex items-center space-x-2 ${
+                    loggingOut ? 'opacity-75 cursor-not-allowed' : ''
+                  }`}
                 >
-                  Logout
+                  {loggingOut && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  <span>{loggingOut ? "Logging out..." : "Logout"}</span>
                 </button>
               </div>
             </div>
@@ -195,26 +207,100 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-600">Manage and track your progress</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={handleRefreshTasks}
-                    className="btn btn-secondary btn-sm flex items-center space-x-2 hover:bg-gray-200 transition-colors"
-                    title="Refresh tasks"
-                  >
+                <button
+                  onClick={handleRefreshTasks}
+                  disabled={refreshing}
+                  className={`btn btn-secondary btn-sm flex items-center space-x-2 transition-colors ${
+                    refreshing
+                      ? 'opacity-75 cursor-not-allowed'
+                      : 'hover:bg-gray-200'
+                  }`}
+                  title={refreshing ? "Refreshing..." : "Refresh tasks"}
+                >
+                  {refreshing ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                  ) : (
                     <span className="text-sm">🔄</span>
-                    <span className="hidden sm:inline">Refresh</span>
-                  </button>
-                  <span className="badge badge-primary text-sm px-3 py-1">
-                    {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+                  )}
+                  <span className="hidden sm:inline">
+                    {refreshing ? "Refreshing..." : "Refresh"}
                   </span>
-                </div>
+                </button>
               </div>
             </div>
-            <div className="card-body">
-              <TaskList
-                tasks={tasks}
-                onTaskStatusUpdate={handleTaskStatusUpdate}
-              />
+
+            {/* Task Stats */}
+            <div className="px-6 py-4 border-b border-gray-100 relative">
+              <div className="flex items-center justify-center space-x-8">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{tasks.length}</div>
+                  <div className="text-xs text-gray-500 font-medium">Total</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-600">{pendingTasks}</div>
+                  <div className="text-xs text-gray-500 font-medium">Pending</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{completedTasks}</div>
+                  <div className="text-xs text-gray-500 font-medium">Done</div>
+                </div>
+              </div>
+
+              {/* Toggle Button */}
+              <button
+                onClick={() => setIsTasksExpanded(!isTasksExpanded)}
+                className="absolute bottom-2 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:bg-gray-100 rounded-full"
+                title={isTasksExpanded ? "Collapse tasks" : "Expand tasks"}
+              >
+                <i className={`fi fi-rs-angle-small-down text-lg transition-transform duration-300 ${
+                  isTasksExpanded ? 'rotate-180' : 'rotate-0'
+                }`}></i>
+              </button>
+            </div>
+
+            {/* Collapsible Task List */}
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              isTasksExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+            }`}>
+              {/* Search Bar */}
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {searchQuery && (
+                  <p className="mt-2 text-sm text-gray-600">
+                    Found {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                  </p>
+                )}
+              </div>
+
+              <div className="card-body">
+                <TaskList
+                  tasks={filteredTasks}
+                  onTaskStatusUpdate={handleTaskStatusUpdate}
+                />
+              </div>
             </div>
           </div>
         </div>

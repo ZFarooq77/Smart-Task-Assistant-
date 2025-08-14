@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../api/supabaseClient";
+import GradientLogo from "../UI/GradientLogo";
 
 export default function Login() {
   const { user } = useAuth();
@@ -99,7 +100,8 @@ export default function Login() {
         <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="mx-auto h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-lg">
+            <div className="mx-auto mb-4">
+              <GradientLogo size="lg" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2 font-poppins">
               {isSignup ? "Create Account" : "Welcome Back"}

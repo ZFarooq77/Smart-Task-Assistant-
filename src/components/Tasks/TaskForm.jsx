@@ -7,6 +7,7 @@ export default function TaskForm({ token, userId, onTaskAdded }) {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,6 +17,9 @@ export default function TaskForm({ token, userId, onTaskAdded }) {
     setErrorMsg("");
 
     try {
+      console.log("🔑 Token in TaskForm.jsx:", token);
+      console.log("👤 User ID in TaskForm.jsx:", userId);
+
       const newTask = await taskAPI.submitTask(description, token, userId);
       console.log("✅ Task submission successful:", newTask);
 
@@ -23,6 +27,12 @@ export default function TaskForm({ token, userId, onTaskAdded }) {
         onTaskAdded(newTask); // Update Dashboard state
         setDescription(""); // Clear form
         setErrorMsg(""); // Clear any previous errors
+
+        // Show success popup for 2 seconds
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 2000);
       } else {
         console.warn("⚠️ Task submission returned unexpected format:", newTask);
         setErrorMsg("Task may have been created but couldn't be confirmed. Please refresh to see your tasks.");
@@ -102,6 +112,16 @@ export default function TaskForm({ token, userId, onTaskAdded }) {
             )}
           </div>
         </div>
+
+        {/* Success popup */}
+        {showSuccess && (
+          <div className="flex justify-center mt-2">
+            <div className="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-lg text-sm font-medium animate-fadeIn flex items-center space-x-2">
+              <span className="text-green-600">✓</span>
+              <span>Done</span>
+            </div>
+          </div>
+        )}
       </form>
     </div>
   );

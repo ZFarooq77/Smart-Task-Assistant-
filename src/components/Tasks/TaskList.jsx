@@ -1,6 +1,22 @@
 //TaskList.jsx to display user tasks with completion toggle
 import React from "react";
 
+// Function to format summary steps
+const formatSummarySteps = (summary) => {
+  if (!summary) return [];
+
+  // Split by "Step" and clean up
+  const steps = summary.split(/Step \d+:/).filter(step => step.trim());
+
+  // If no "Step X:" pattern found, try splitting by periods or commas
+  if (steps.length <= 1) {
+    const altSteps = summary.split(/[.;]/).filter(step => step.trim() && step.length > 10);
+    if (altSteps.length > 1) return altSteps;
+  }
+
+  return steps.length > 1 ? steps : [summary];
+};
+
 export default function TaskList({ tasks, onTaskStatusUpdate }) {
   if (!tasks || tasks.length === 0) {
     return (
@@ -66,13 +82,22 @@ export default function TaskList({ tasks, onTaskStatusUpdate }) {
 
                 {task.summary && (
                   <div className="ml-5 mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                    <div className="flex items-center space-x-2 mb-2">
+                    <div className="flex items-center space-x-2 mb-3">
                       <span className="text-blue-600 text-sm">📝</span>
                       <h4 className="font-semibold text-blue-900 text-sm">Action Plan</h4>
                     </div>
-                    <p className="text-sm text-blue-800 leading-relaxed pl-6">
-                      {task.summary}
-                    </p>
+                    <div className="pl-6 space-y-2">
+                      {formatSummarySteps(task.summary).map((step, index) => (
+                        <div key={index} className="flex items-start space-x-2">
+                          <span className="text-blue-600 font-semibold text-xs mt-0.5 min-w-[20px]">
+                            {index + 1}.
+                          </span>
+                          <p className="text-sm text-blue-800 leading-relaxed">
+                            {step.trim()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

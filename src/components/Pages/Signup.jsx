@@ -1,4 +1,5 @@
 import React from "react";
+import GradientLogo from "../UI/GradientLogo";
 import { Link } from "react-router-dom";
 import SignupForm from "../../components/Auth/SignupForm";
 
@@ -19,10 +20,8 @@ export default function Signup() {
         <div className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="mx-auto h-16 w-16 bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
+            <div className="mx-auto mb-4">
+              <GradientLogo size="2xl" />
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
             <p className="text-gray-600">Join us and start managing your tasks efficiently</p>

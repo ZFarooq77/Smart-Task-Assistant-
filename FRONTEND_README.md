@@ -9,11 +9,11 @@ A React.js frontend application for the AI-powered task management system that c
 - **User Authentication**: Secure login and signup using Supabase Auth with JWT tokens
 - **Protected Routes**: Dashboard is only accessible to authenticated users
 - **Task Input Form**: Clean, user-friendly form for submitting task descriptions
-- **Dashboard View**: 
+- **Dashboard View**:
   - Displays newly submitted tasks with AI analysis results
   - Shows list of user's past tasks
   - Real-time updates when new tasks are added
-- **Task Management**: 
+- **Task Management**:
   - Mark tasks as complete/pending with toggle buttons
   - Visual status indicators (completed tasks are highlighted in green)
   - Enhanced task display with category-specific colors
@@ -63,14 +63,25 @@ app/
 ## Setup Instructions
 
 1. **Install Dependencies**:
+
    ```bash
    cd app
    npm install
    ```
 
 2. **Environment Setup**:
-   - Supabase credentials are already configured in `src/api/supabaseClient.js`
-   - Make sure your n8n workflow is running on `http://localhost:5678`
+
+   - Copy `.env.example` to `.env` and fill in your actual values:
+     ```bash
+     cp .env.example .env
+     ```
+   - Update `.env` with your credentials:
+     - `VITE_GROQ_API_KEY`: Your Groq API key
+     - `VITE_GROQ_MODEL`: Your preferred Groq model (e.g., llama-3.3-70b-versatile)
+     - `VITE_SUPABASE_URL`: Your Supabase project URL
+     - `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+     - `VITE_N8N_WEBHOOK_URL`: Your n8n webhook endpoint
+   - Make sure your n8n workflow is running on the configured URL
 
 3. **Start Development Server**:
    ```bash
@@ -90,12 +101,13 @@ app/
 ## API Integration
 
 The frontend connects to your n8n backend workflow at:
+
 - **Endpoint**: `http://localhost:5678/webhook-test/process-task`
 - **Method**: POST
-- **Headers**: 
+- **Headers**:
   - `Authorization: Bearer {supabase_jwt_token}`
   - `Content-Type: application/json`
-- **Payload**: 
+- **Payload**:
   ```json
   {
     "description": "Task description",
@@ -106,6 +118,7 @@ The frontend connects to your n8n backend workflow at:
 ## Database Schema Expected
 
 The application expects a `tasks` table in Supabase with these columns:
+
 - `id` (uuid, primary key)
 - `user_id` (uuid, foreign key to auth.users)
 - `description` (text)
@@ -130,11 +143,13 @@ The application expects a `tasks` table in Supabase with these columns:
 To test the complete functionality:
 
 1. **Authentication Flow**:
+
    - Sign up with a new email/password
    - Login with the credentials
    - Verify redirect to dashboard
 
 2. **Task Management**:
+
    - Submit a new task description
    - Verify it appears in the task list with AI analysis
    - Toggle task completion status
