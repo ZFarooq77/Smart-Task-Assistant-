@@ -4,16 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 // Get configuration from environment variables
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-const GROQ_MODEL = import.meta.env.VITE_GROQ_MODEL;
 const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
 // Validate required environment variables
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error('Missing required Supabase environment variables. Please check your .env file.');
-}
-if (!GROQ_API_KEY || !GROQ_MODEL) {
-  throw new Error('Missing required Groq environment variables. Please check your .env file.');
 }
 if (!N8N_WEBHOOK_URL) {
   throw new Error('Missing required n8n webhook URL environment variable. Please check your .env file.');
@@ -22,9 +17,7 @@ if (!N8N_WEBHOOK_URL) {
 // Log configuration (without sensitive data)
 console.log('🔧 Configuration loaded:');
 console.log('  - Supabase URL:', SUPABASE_URL);
-console.log('  - Groq Model:', GROQ_MODEL);
 console.log('  - n8n Webhook URL:', N8N_WEBHOOK_URL);
-console.log('  - Groq API Key:', GROQ_API_KEY ? `${GROQ_API_KEY.substring(0, 10)}...` : 'NOT SET');
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -77,8 +70,10 @@ export const taskAPI = {
 
     try {
       console.log("🚀 Sending task to n8n webhook...");
+      console.log("🔗 Webhook URL:", N8N_WEBHOOK_URL);
       console.log("🔑 Token being sent:", token ? `${token.substring(0, 20)}...` : 'undefined/null');
       console.log("👤 User ID being sent:", userId);
+      console.log("📝 Description being sent:", description);
 
       // Prepare headers with proper authorization format
       const headers = {
@@ -95,9 +90,7 @@ export const taskAPI = {
         headers,
         body: JSON.stringify({
           description,
-          user_id: userId,
-          groqApiKey: GROQ_API_KEY,
-          groqModel: GROQ_MODEL
+          user_id: userId  // Send user_id as backup while n8n JWT extraction is being set up
         })
       });
 
@@ -110,7 +103,9 @@ export const taskAPI = {
 
         // Provide more specific error messages based on status code
         if (response.status === 401) {
-          throw new Error(`Authentication failed: Invalid or expired token`);
+          throw new Error(`JWT Authentication failed: Invalid or expired token. Please try logging out and back in.`);
+        } else if (response.status === 403) {
+          throw new Error(`JWT Authorization failed: Token is valid but lacks required permissions.`);
         } else if (response.status === 400) {
           throw new Error(`Bad request: ${errorText}`);
         } else if (response.status === 404) {
@@ -122,6 +117,14 @@ export const taskAPI = {
 
       const responseText = await response.text();
       console.log("📄 n8n raw response:", responseText);
+      console.log("📄 n8n response length:", responseText.length);
+      console.log("📄 n8n response type:", typeof responseText);
+
+      // Check if response is empty
+      if (!responseText || responseText.trim() === '') {
+        console.error("❌ n8n returned empty response");
+        throw new Error("n8n returned empty response. Check if your workflow has a 'Respond to Webhook' node at the end.");
+      }
 
       let result;
       try {
@@ -129,7 +132,8 @@ export const taskAPI = {
         console.log("✅ n8n parsed response:", result);
       } catch (parseError) {
         console.error("❌ Failed to parse n8n response as JSON:", parseError);
-        throw new Error(`Invalid response format from n8n: ${responseText}`);
+        console.error("❌ Raw response that failed to parse:", JSON.stringify(responseText));
+        throw new Error(`Invalid response format from n8n. Expected JSON but got: "${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}"`);
       }
 
       // Check if result has the task data directly
