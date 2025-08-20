@@ -1,5 +1,8 @@
-//TaskList.jsx to display user tasks with completion toggle
-import React from "react";
+//TaskList.jsx to display user tasks with completion toggle, tag management, and scheduling
+import React, { useState } from "react";
+import TagManager from "./TagManager";
+import TaskScheduler from "./TaskScheduler";
+import { formatDisplayDate, getTaskScheduleStatus } from "../../utils/timeUtils";
 
 // Function to format summary steps
 const formatSummarySteps = (summary) => {
@@ -17,7 +20,10 @@ const formatSummarySteps = (summary) => {
   return steps.length > 1 ? steps : [summary];
 };
 
-export default function TaskList({ tasks, onTaskStatusUpdate }) {
+export default function TaskList({ tasks, onTaskStatusUpdate, onTaskTagsUpdate, onTaskScheduleUpdate }) {
+  const [editingTags, setEditingTags] = useState(null);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+
   if (!tasks || tasks.length === 0) {
     return (
       <div className="text-center text-gray-500 mt-4">
@@ -28,6 +34,20 @@ export default function TaskList({ tasks, onTaskStatusUpdate }) {
 
   const handleToggleComplete = (taskId, currentStatus) => {
     onTaskStatusUpdate(taskId, !currentStatus);
+  };
+
+  const handleTagsUpdate = async (taskId, newTags) => {
+    if (onTaskTagsUpdate) {
+      await onTaskTagsUpdate(taskId, newTags);
+    }
+    setEditingTags(null);
+  };
+
+  const handleScheduleUpdate = async (taskId, startDate, endDate) => {
+    if (onTaskScheduleUpdate) {
+      await onTaskScheduleUpdate(taskId, startDate, endDate);
+    }
+    setEditingSchedule(null);
   };
 
   return (
@@ -78,6 +98,98 @@ export default function TaskList({ tasks, onTaskStatusUpdate }) {
                       {task.is_done ? "Completed" : "Pending"}
                     </span>
                   </div>
+                </div>
+
+                {/* Tags Section */}
+                <div className="ml-5 mt-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-400 text-xs">🏷️</span>
+                      <span className="text-xs text-gray-600 font-medium">Tags:</span>
+                    </div>
+                    <button
+                      onClick={() => setEditingTags(editingTags === task.id ? null : task.id)}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      {editingTags === task.id ? "Cancel" : "Edit"}
+                    </button>
+                  </div>
+
+                  {editingTags === task.id ? (
+                    <TagManager
+                      taskId={task.id}
+                      currentTags={task.tags || []}
+                      onSave={handleTagsUpdate}
+                      onCancel={() => setEditingTags(null)}
+                    />
+                  ) : (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {task.tags && task.tags.length > 0 ? (
+                        task.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
+                          >
+                            {tag}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">No tags</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Schedule Section */}
+                <div className="ml-5 mt-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-400 text-xs">📅</span>
+                      <span className="text-xs text-gray-600 font-medium">Schedule:</span>
+                    </div>
+                    <button
+                      onClick={() => setEditingSchedule(editingSchedule === task.id ? null : task.id)}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      {editingSchedule === task.id ? "Cancel" : "Schedule"}
+                    </button>
+                  </div>
+
+                  {editingSchedule === task.id ? (
+                    <TaskScheduler
+                      task={task}
+                      onSave={handleScheduleUpdate}
+                      onCancel={() => setEditingSchedule(null)}
+                    />
+                  ) : (
+                    <div className="mt-2">
+                      {task.start_date ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              getTaskScheduleStatus(task).status === 'completed' ? 'bg-green-100 text-green-800' :
+                              getTaskScheduleStatus(task).status === 'overdue' ? 'bg-red-100 text-red-800' :
+                              getTaskScheduleStatus(task).status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {getTaskScheduleStatus(task).status === 'completed' ? '✅ Completed' :
+                               getTaskScheduleStatus(task).status === 'overdue' ? '⚠️ Overdue' :
+                               getTaskScheduleStatus(task).status === 'in-progress' ? '🔄 In Progress' :
+                               '📅 Scheduled'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            <div><span className="font-medium">Start:</span> {formatDisplayDate(task.start_date)}</div>
+                            {task.end_date && (
+                              <div><span className="font-medium">End:</span> {formatDisplayDate(task.end_date)}</div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">Not scheduled</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {task.summary && (

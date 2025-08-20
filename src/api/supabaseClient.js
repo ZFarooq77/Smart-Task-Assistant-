@@ -55,6 +55,33 @@ export const taskAPI = {
     return data[0];
   },
 
+  // Update task tags
+  async updateTaskTags(taskId, tags) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({ tags: tags })
+      .eq('id', taskId)
+      .select();
+
+    if (error) throw error;
+    return data[0];
+  },
+
+  // Update task schedule (start_date and end_date)
+  async updateTaskSchedule(taskId, startDate, endDate) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({
+        start_date: startDate,
+        end_date: endDate
+      })
+      .eq('id', taskId)
+      .select();
+
+    if (error) throw error;
+    return data[0];
+  },
+
   // Submit new task to n8n webhook
   async submitTask(description, token, userId) {
     // Validate required parameters

@@ -17,6 +17,8 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState("");
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [sortBy, setSortBy] = useState("created_at"); // created_at, category, tags, status
 
   // Redirect if not logged in
   useEffect(() => {
@@ -64,6 +66,32 @@ export default function Dashboard() {
     }
   };
 
+  // Handle task tags update
+  const handleTaskTagsUpdate = async (taskId, newTags) => {
+    try {
+      await taskAPI.updateTaskTags(taskId, newTags);
+      setTasks(tasks.map(task =>
+        task.id === taskId ? { ...task, tags: newTags } : task
+      ));
+    } catch (err) {
+      console.error("Failed to update task tags:", err);
+      setError("Failed to update task tags. Please try again.");
+    }
+  };
+
+  // Handle task schedule update
+  const handleTaskScheduleUpdate = async (taskId, startDate, endDate) => {
+    try {
+      await taskAPI.updateTaskSchedule(taskId, startDate, endDate);
+      setTasks(tasks.map(task =>
+        task.id === taskId ? { ...task, start_date: startDate, end_date: endDate } : task
+      ));
+    } catch (err) {
+      console.error("Failed to update task schedule:", err);
+      setError("Failed to update task schedule. Please try again.");
+    }
+  };
+
   // Handle refresh tasks
   const handleRefreshTasks = async () => {
     if (!user?.id || refreshing) return;
@@ -95,12 +123,47 @@ export default function Dashboard() {
   const completedTasks = tasks.filter(task => task.is_done).length;
   const pendingTasks = tasks.filter(task => !task.is_done).length;
 
-  // Filter tasks based on search query
-  const filteredTasks = tasks.filter(task =>
-    task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.summary?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Get all unique tags from tasks
+  const allTags = [...new Set(tasks.flatMap(task => task.tags || []))].sort();
+
+  // Filter and sort tasks
+  const getFilteredAndSortedTasks = () => {
+    let filtered = tasks.filter(task => {
+      // Search query filter
+      const matchesSearch = !searchQuery ||
+        task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (task.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      // Tag filter
+      const matchesTags = selectedTags.length === 0 ||
+        selectedTags.some(selectedTag => (task.tags || []).includes(selectedTag));
+
+      return matchesSearch && matchesTags;
+    });
+
+    // Sort tasks
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "category":
+          return (a.category || "").localeCompare(b.category || "");
+        case "status":
+          return a.is_done === b.is_done ? 0 : a.is_done ? 1 : -1;
+        case "tags":
+          const aTagCount = (a.tags || []).length;
+          const bTagCount = (b.tags || []).length;
+          return bTagCount - aTagCount;
+        case "created_at":
+        default:
+          return new Date(b.created_at) - new Date(a.created_at);
+      }
+    });
+
+    return filtered;
+  };
+
+  const filteredTasks = getFilteredAndSortedTasks();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -114,6 +177,17 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center space-x-4">
+              {/* Navigation Links */}
+              <button
+                onClick={() => navigate("/schedule")}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Schedule</span>
+              </button>
+
               <div className="flex items-center space-x-3">
                 <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-medium text-xs">
@@ -293,12 +367,76 @@ export default function Dashboard() {
                     Found {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''} matching "{searchQuery}"
                   </p>
                 )}
+
+                {/* Filtering and Sorting Controls */}
+                <div className="mt-4 space-y-3">
+                  {/* Sort Controls */}
+                  <div className="flex items-center space-x-4">
+                    <label className="text-sm font-medium text-gray-700">Sort by:</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="created_at">Date Created</option>
+                      <option value="category">Category</option>
+                      <option value="status">Status</option>
+                      <option value="tags">Tag Count</option>
+                    </select>
+                  </div>
+
+                  {/* Tag Filter */}
+                  {allTags.length > 0 && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Filter by tags:</label>
+                      <div className="flex flex-wrap gap-2">
+                        {allTags.map(tag => (
+                          <button
+                            key={tag}
+                            onClick={() => {
+                              if (selectedTags.includes(tag)) {
+                                setSelectedTags(selectedTags.filter(t => t !== tag));
+                              } else {
+                                setSelectedTags([...selectedTags, tag]);
+                              }
+                            }}
+                            className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                              selectedTags.includes(tag)
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                        {selectedTags.length > 0 && (
+                          <button
+                            onClick={() => setSelectedTags([])}
+                            className="px-3 py-1 text-xs rounded-full bg-red-100 text-red-700 border border-red-300 hover:bg-red-200"
+                          >
+                            Clear All
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Results Summary */}
+                  <div className="text-sm text-gray-600">
+                    Showing {filteredTasks.length} of {tasks.length} tasks
+                    {selectedTags.length > 0 && (
+                      <span> • Filtered by: {selectedTags.join(', ')}</span>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="card-body">
                 <TaskList
                   tasks={filteredTasks}
                   onTaskStatusUpdate={handleTaskStatusUpdate}
+                  onTaskTagsUpdate={handleTaskTagsUpdate}
+                  onTaskScheduleUpdate={handleTaskScheduleUpdate}
                 />
               </div>
             </div>

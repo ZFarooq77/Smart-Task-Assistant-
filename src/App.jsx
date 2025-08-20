@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 // Pages
 import Login from "./components/Pages/Login";
 import Dashboard from "./components/Pages/Dashboard";
+import GanttChart from "./components/Pages/GanttChart";
 
 // Private Route Wrapper
 function PrivateRoute({ children }) {
@@ -38,6 +39,16 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Dashboard />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Gantt Chart is protected */}
+          <Route
+            path="/schedule"
+            element={
+              <PrivateRoute>
+                <GanttChart />
               </PrivateRoute>
             }
           />
