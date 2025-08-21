@@ -76,8 +76,6 @@ app/
      cp .env.example .env
      ```
    - Update `.env` with your credentials:
-     - `VITE_GROQ_API_KEY`: Your Groq API key
-     - `VITE_GROQ_MODEL`: Your preferred Groq model (e.g., llama-3.3-70b-versatile)
      - `VITE_SUPABASE_URL`: Your Supabase project URL
      - `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
      - `VITE_N8N_WEBHOOK_URL`: Your n8n webhook endpoint
@@ -87,7 +85,6 @@ app/
    ```bash
    npm run dev
    ```
-   The app will be available at `http://localhost:5173`
 
 ## Usage
 
@@ -102,7 +99,7 @@ app/
 
 The frontend connects to your n8n backend workflow at:
 
-- **Endpoint**: `http://localhost:5678/webhook-test/process-task`
+- **Endpoint**: `http://localhost:port/xyz-node/abc`
 - **Method**: POST
 - **Headers**:
   - `Authorization: Bearer {supabase_jwt_token}`

@@ -35,7 +35,10 @@ export default function Dashboard() {
       try {
         setLoading(true);
         setError("");
+        console.log("🔍 Fetching tasks for user:", user.id);
         const userTasks = await taskAPI.fetchUserTasks(user.id);
+        console.log("🔍 Raw tasks from database:", userTasks);
+        console.log("🔍 Total tasks fetched:", userTasks?.length || 0);
         setTasks(userTasks);
       } catch (err) {
         console.error("Failed to fetch tasks:", err);
@@ -130,11 +133,11 @@ export default function Dashboard() {
   const getFilteredAndSortedTasks = () => {
     let filtered = tasks.filter(task => {
       // Search query filter
-      const matchesSearch = !searchQuery ||
-        task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (task.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesSearch = !searchQuery || searchQuery.trim() === '' ||
+        (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (task.category && task.category.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (task.summary && task.summary.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (task.tags && Array.isArray(task.tags) && task.tags.some(tag => tag && tag.toLowerCase().includes(searchQuery.toLowerCase())));
 
       // Tag filter
       const matchesTags = selectedTags.length === 0 ||
@@ -164,6 +167,13 @@ export default function Dashboard() {
   };
 
   const filteredTasks = getFilteredAndSortedTasks();
+
+  // Debug filtering
+  console.log("🔍 All tasks:", tasks.length);
+  console.log("🔍 Filtered tasks:", filteredTasks.length);
+  console.log("🔍 Search query:", searchQuery);
+  console.log("🔍 Selected tags:", selectedTags);
+  console.log("🔍 Sort by:", sortBy);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">

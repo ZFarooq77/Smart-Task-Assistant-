@@ -25,13 +25,20 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 export const taskAPI = {
   // Fetch all tasks for a user
   async fetchUserTasks(userId) {
+    console.log("🔍 Fetching tasks for user_id:", userId);
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("❌ Database error fetching tasks:", error);
+      throw error;
+    }
+
+    console.log("🔍 Raw database response:", data);
+    console.log("🔍 Number of tasks from database:", data?.length || 0);
 
     // Convert is_done strings to proper booleans
     if (data) {

@@ -208,7 +208,7 @@ export default function GanttChart() {
           </div>
           <div className="bg-white p-4 rounded-lg border border-gray-200">
             <div className="text-2xl font-bold text-green-600">
-              {scheduledTasks.filter(t => t.is_done).length}
+              {tasks.filter(t => t.is_done).length}
             </div>
             <div className="text-sm text-gray-600">Completed</div>
           </div>

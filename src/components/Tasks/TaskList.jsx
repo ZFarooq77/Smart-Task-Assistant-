@@ -24,6 +24,13 @@ export default function TaskList({ tasks, onTaskStatusUpdate, onTaskTagsUpdate, 
   const [editingTags, setEditingTags] = useState(null);
   const [editingSchedule, setEditingSchedule] = useState(null);
 
+  // Debug: Log task data to help identify issues
+  console.log("🔍 TaskList received tasks:", tasks);
+  if (tasks && tasks.length > 0) {
+    console.log("🔍 First task structure:", tasks[0]);
+    console.log("🔍 First task tags:", tasks[0].tags, "Type:", typeof tasks[0].tags);
+  }
+
   if (!tasks || tasks.length === 0) {
     return (
       <div className="text-center text-gray-500 mt-4">
@@ -118,13 +125,13 @@ export default function TaskList({ tasks, onTaskStatusUpdate, onTaskTagsUpdate, 
                   {editingTags === task.id ? (
                     <TagManager
                       taskId={task.id}
-                      currentTags={task.tags || []}
+                      currentTags={Array.isArray(task.tags) ? task.tags : []}
                       onSave={handleTagsUpdate}
                       onCancel={() => setEditingTags(null)}
                     />
                   ) : (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {task.tags && task.tags.length > 0 ? (
+                      {task.tags && Array.isArray(task.tags) && task.tags.length > 0 ? (
                         task.tags.map((tag, index) => (
                           <span
                             key={index}
