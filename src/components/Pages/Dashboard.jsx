@@ -153,10 +153,6 @@ export default function Dashboard() {
           return (a.category || "").localeCompare(b.category || "");
         case "status":
           return a.is_done === b.is_done ? 0 : a.is_done ? 1 : -1;
-        case "tags":
-          const aTagCount = (a.tags || []).length;
-          const bTagCount = (b.tags || []).length;
-          return bTagCount - aTagCount;
         case "created_at":
         default:
           return new Date(b.created_at) - new Date(a.created_at);
@@ -391,7 +387,6 @@ export default function Dashboard() {
                       <option value="created_at">Date Created</option>
                       <option value="category">Category</option>
                       <option value="status">Status</option>
-                      <option value="tags">Tag Count</option>
                     </select>
                   </div>
 
