@@ -164,12 +164,7 @@ export default function Dashboard() {
 
   const filteredTasks = getFilteredAndSortedTasks();
 
-  // Debug filtering
-  console.log("🔍 All tasks:", tasks.length);
-  console.log("🔍 Filtered tasks:", filteredTasks.length);
-  console.log("🔍 Search query:", searchQuery);
-  console.log("🔍 Selected tags:", selectedTags);
-  console.log("🔍 Sort by:", sortBy);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -436,7 +431,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="card-body">
+              <div className="card-body max-h-[600px] overflow-y-auto">
                 <TaskList
                   tasks={filteredTasks}
                   onTaskStatusUpdate={handleTaskStatusUpdate}
